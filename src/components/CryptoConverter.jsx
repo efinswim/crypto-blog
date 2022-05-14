@@ -1,27 +1,28 @@
 import React from 'react';
 import Box from '@mui/material/Box';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useReducer } from 'react';
 import axios from 'axios';
 import CurrencyRow from './CurrencyRow';
 
+function reducer(state, action) {
+  switch (action.type) {
+    case 'increment':
+      return { count: state.count + 1 };
+    case 'decrement':
+      return { count: state.count - 1 };
+    default:
+      throw new Error();
+  }
+}
+
 const CryptoConverter = () => {
   const [currency, setCurrency] = useState([]);
+  const [firstAmount, setFirstAmount] = useState(1);
+  const [secondAmount, setSecondAmount] = useState(10);
+  const [firstCurrency, setFirstCurrency] = useState('BTC');
+  const [secondCurrency, setSecondCurrency] = useState('ETH');
 
-  const [currencyOptions, setCurrencyOptions] = useState([])
-  const [fromCurrency, setFromCurrency] = useState()
-  const [toCurrency, setToCurrency] = useState()
-  const [exchangeRate, setExchangeRate] = useState()
-  const [amount, setAmount] = useState(1)
-  const [amountInFromCurrency, setAmountInFromCurrency] = useState(true)
-
-  let toAmount, fromAmount;
-  if (amountInFromCurrency) {
-    fromAmount = amount;
-    toAmount = amount * exchangeRate;
-  } else {
-    toAmount = amount;
-    fromAmount = amount / exchangeRate;
-  }
+  const [state, dispatch] = useReducer(reducer, firstAmount);
 
   useEffect(() => {
     axios
@@ -34,80 +35,30 @@ const CryptoConverter = () => {
             name: coin.CoinInfo.Name,
             price: coin.RAW.USD.PRICE,
           };
-          
-          console.log(obj);
           return obj;
         });
         setCurrency(coins);
-
-        const firstCurrency = Object.keys(data.rates)[0];
-        setCurrencyOptions([coins, ...Object.keys(data.rates)]);
-        setFromCurrency(coins);
-        setToCurrency(firstCurrency);
-        setExchangeRate(coins.price[firstCurrency]);
       });
   }, []);
 
-    console.log(
-      'amountInFromCurrency',
-      amountInFromCurrency,
-      'amount',
-      amount,
-      'exchangeRate',
-      exchangeRate,
-      'toCurrency',
-      toCurrency,
-      'fromCurrency',
-      fromCurrency,
-      'currencyOptions',
-      currencyOptions,
-    );
+  function handleFirstAmountChange(event) {
+    setFirstAmount(event.target.value);
+  }
 
-    useEffect(() => {
-      axios
-        .get(
-          'https://min-api.cryptocompare.com/data/top/totalvolfull?limit=10&tsym=USD',
-        )
-        .then(({ data }) => {
-          const coins = data.Data.map((coin) => {
-            const obj = {
-              name: coin.CoinInfo.Name,
-              price: coin.RAW.USD.PRICE,
-            };
-            return obj;
-          });
-          setExchangeRate(coins.price[toCurrency]);
-        });
-
-    }, [fromCurrency, toCurrency]);
-
-    function handleFromAmountChange(e) {
-      setAmount(e.target.value);
-      setAmountInFromCurrency(true);
-    }
-
-    function handleToAmountChange(e) {
-      setAmount(e.target.value);
-      setAmountInFromCurrency(false);
-    }
+  function handleSecondAmountChange(event) {
+    setSecondAmount(event.target.value);
+  }
 
   return (
     <Box component="form">
       <CurrencyRow
         currency={currency}
-        currencyOptions={currencyOptions}
-        selectedCurrency={toCurrency}
-        onChangeCurrency={(e) => setToCurrency(e.target.value)}
-        onChangeAmount={handleFromAmountChange}
-        amount={toAmount}
-      />
-      <CurrencyRow
-        currency={currency}
-        currencyOptions={currencyOptions}
-        selectedCurrency={toCurrency}
-        onChangeCurrency={(e) => setToCurrency(e.target.value)}
-        onChangeAmount={handleToAmountChange}
-        amount={toAmount}
+        firstAmount={firstAmount}
+        secondAmount={secondAmount}
+        handleFirstAmountChange={handleFirstAmountChange}
+        handleSecondAmountChange={handleSecondAmountChange}
+        firstCurrency={firstCurrency}
+        secondCurrency={secondCurrency}
       />
     </Box>
   );
